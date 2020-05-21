@@ -14,8 +14,9 @@ describe("Render task definition", () => {
     core.getInput = jest
       .fn()
       .mockReturnValueOnce("task-definition.json") // task-definition
-      .mockReturnValueOnce("NODE_ENV") // container-name
-      .mockReturnValueOnce("production"); // image
+      .mockReturnValueOnce("envcon") // container-name
+      .mockReturnValueOnce("NODE_ENV") // env name
+      .mockReturnValueOnce("production"); // env value
 
     process.env = Object.assign(process.env, { GITHUB_WORKSPACE: __dirname });
     process.env = Object.assign(process.env, {
@@ -35,9 +36,23 @@ describe("Render task definition", () => {
       "./task-definition.json",
       () => ({
         family: "task-def-family",
-        environment: [
-          { name: "NODE_ENVV", value: "development" },
-          { name: "NODE_ENV", value: "development" },
+        containerDefinitions: [
+          {
+            name: "envcon",
+            image: "some-other-image",
+            environment: [
+              { name: "NODE_ENVV", value: "development" },
+              { name: "NODE_ENV", value: "development" },
+            ],
+          },
+          {
+            name: "sidecar",
+            image: "some-other-image",
+            environment: [
+              { name: "NODE_ENVV", value: "development" },
+              { name: "NODE_ENV", value: "development" },
+            ],
+          },
         ],
       }),
       { virtual: true }
@@ -58,9 +73,23 @@ describe("Render task definition", () => {
       JSON.stringify(
         {
           family: "task-def-family",
-          environment: [
-            { name: "NODE_ENVV", value: "development" },
-            { name: "NODE_ENV", value: "production" },
+          containerDefinitions: [
+            {
+              name: "envcon",
+              image: "some-other-image",
+              environment: [
+                { name: "NODE_ENVV", value: "development" },
+                { name: "NODE_ENV", value: "production" },
+              ],
+            },
+            {
+              name: "sidecar",
+              image: "some-other-image",
+              environment: [
+                { name: "NODE_ENVV", value: "development" },
+                { name: "NODE_ENV", value: "development" },
+              ],
+            },
           ],
         },
         null,

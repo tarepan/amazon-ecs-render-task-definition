@@ -9,6 +9,7 @@ async function run() {
     const taskDefinitionFile = core.getInput("task-definition", {
       required: true,
     });
+    const containerName = core.getInput("container-name", { required: true });
     const envName = core.getInput("env-name", { required: true });
     const envValue = core.getInput("env-value", { required: true });
 
@@ -24,30 +25,47 @@ async function run() {
     //// node.js `require` read file as json
     const taskDefContents = require(taskDefPath);
 
-    // Insert env
-    if (
-      taskDefContents.environment &&
-      !Array.isArray(taskDefContents.environment)
-    ) {
+    // Insert the image URI
+    if (!Array.isArray(taskDefContents.containerDefinitions)) {
       throw new Error(
-        "Invalid task definition format: environment section is present but is not an array"
+        "Invalid task definition format: containerDefinitions section is not present or is not an array"
       );
     }
-    if (taskDefContents.environment) {
-      const envIndex = taskDefContents.environment.findIndex(
-        (pair) => pair.name === envName
-      );
-      // override
-      if (envIndex !== -1) {
-        taskDefContents.environment[envIndex].value = envValue;
+    taskDefContents.containerDefinitions = taskDefContents.containerDefinitions.map(
+      (containerDef) => {
+        if (containerDef.name !== containerName) {
+          return containerDef;
+        } else {
+          // Insert env
+          if (
+            containerDef.environment &&
+            !Array.isArray(containerDef.environment)
+          ) {
+            throw new Error(
+              "Invalid task definition format: environment section is present but is not an array"
+            );
+          }
+          if (containerDef.environment) {
+            const envIndex = containerDef.environment.findIndex(
+              (pair) => pair.name === envName
+            );
+            // override
+            if (envIndex !== -1) {
+              containerDef.environment[envIndex].value = envValue;
+            }
+            // insertion
+            else {
+              containerDef.environment.push([
+                { name: envName, value: envValue },
+              ]);
+            }
+          } else {
+            containerDef.environment = [{ name: envName, value: envValue }];
+          }
+          return containerDef;
+        }
       }
-      // insertion
-      else {
-        taskDefContents.environment.push([{ name: envName, value: envValue }]);
-      }
-    } else {
-      taskDefContents.environment = [{ name: envName, value: envValue }];
-    }
+    );
 
     // Write out a new task definition file
     var updatedTaskDefFile = tmp.fileSync({

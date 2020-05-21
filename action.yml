@@ -7,6 +7,9 @@ inputs:
   task-definition:
     description: "The path to the ECS task definition JSON file"
     required: true
+  container-name:
+    description: "The name of env inserted container"
+    required: true
   env-name:
     description: "The name of an inserted environment variable"
     required: true
