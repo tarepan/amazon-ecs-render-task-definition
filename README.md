@@ -18,17 +18,17 @@ To insert the value `production` as an environment variable `NODE_ENV` in the ta
 
 ```yaml
 - name: Render env in Amazon ECS task definition
-  id: render-nodeenv
-  uses: tarepan/amazon-ecs-render-task-definition@v1
+  id: render-env
+  uses: tarepan/amazon-ecs-render-task-definition-env@v2
   with:
     task-definition: task-definition.json
     env-name: NODE_ENV
     env-value: production
 
 - name: Deploy to Amazon ECS service
-  uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+  uses: tarepan/amazon-ecs-render-task-definition-env@v2
   with:
-    task-definition: ${{ steps.render-web-container.outputs.task-definition }}
+    task-definition: ${{ steps.render-env.outputs.task-definition }}
     service: my-service
     cluster: my-cluster
 ```
