@@ -9,8 +9,8 @@ async function run() {
     const taskDefinitionFile = core.getInput("task-definition", {
       required: true,
     });
-    const containerName = core.getInput("container-name", { required: true });
-    const imageURI = core.getInput("image", { required: true });
+    const envName = core.getInput("env-name", { required: true });
+    const envValue = core.getInput("env-value", { required: true });
 
     // Parse the task definition
     const taskDefPath = path.isAbsolute(taskDefinitionFile)
@@ -21,25 +21,33 @@ async function run() {
         `Task definition file does not exist: ${taskDefinitionFile}`
       );
     }
+    //// node.js `require` read file as json
     const taskDefContents = require(taskDefPath);
 
-    // Insert the image URI
-    if (!Array.isArray(taskDefContents.containerDefinitions)) {
-      throw new Error(
-        "Invalid task definition format: containerDefinitions section is not present or is not an array"
-      );
-    }
-    const containerDef = taskDefContents.containerDefinitions.find(function (
-      element
+    // Insert env
+    if (
+      taskDefContents.environment &&
+      !Array.isArray(taskDefContents.environment)
     ) {
-      return element.name == containerName;
-    });
-    if (!containerDef) {
       throw new Error(
-        "Invalid task definition: Could not find container definition with matching name"
+        "Invalid task definition format: environment section is present but is not an array"
       );
     }
-    containerDef.image = imageURI;
+    if (taskDefContents.environment) {
+      const envIndex = taskDefContents.environment.findIndex(
+        (pair) => pair.name === envName
+      );
+      // override
+      if (envIndex !== -1) {
+        taskDefContents.environment[envIndex].value = envValue;
+      }
+      // insertion
+      else {
+        taskDefContents.environment.push([{ name: envName, value: envValue }]);
+      }
+    } else {
+      taskDefContents.environment = [{ name: envName, value: envValue }];
+    }
 
     // Write out a new task definition file
     var updatedTaskDefFile = tmp.fileSync({
