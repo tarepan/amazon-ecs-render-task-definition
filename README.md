@@ -22,7 +22,7 @@ To insert the value `production` as an environment variable `NODE_ENV` in the ta
   uses: tarepan/amazon-ecs-render-task-definition@v1
   with:
     task-definition: task-definition.json
-    env-name: web
+    env-name: NODE_ENV
     env-value: production
 
 - name: Deploy to Amazon ECS service
